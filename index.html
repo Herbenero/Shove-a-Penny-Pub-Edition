@@ -1,1 +1,1425 @@
-sdgs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shove a Penny — Cricket Dart Game Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --bg-2:#111925;
+      --panel:#141f2c;
+      --panel-2:#1a2738;
+      --line:rgba(255,255,255,.08);
+      --line-2:rgba(255,255,255,.15);
+      --text:#f5f7fb;
+      --muted:#9fb0c4;
+      --accent:#7ef0b2;
+      --accent-2:#7fc4ff;
+      --gold:#ffd56c;
+      --danger:#ff7586;
+      --shadow:0 20px 60px rgba(0,0,0,.38);
+      --radius:24px;
+      --radius-sm:16px;
+      --max:1480px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;padding:0;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(126,240,178,.08), transparent 28%),
+        radial-gradient(circle at 100% 0%, rgba(127,196,255,.10), transparent 24%),
+        linear-gradient(180deg, #0a0e13, #0b0f14 40%, #0d131b 100%);
+      color:var(--text);
+      font-family:"Space Grotesk", sans-serif;
+      min-height:100%;
+    }
+    body{overflow-x:hidden}
+    button,input,select{font:inherit}
+    .app{
+      width:min(var(--max), calc(100% - 24px));
+      margin:18px auto 40px;
+    }
+
+    .reveal{
+      opacity:0;
+      transform:translateY(18px);
+      animation:rise .7s ease forwards;
+    }
+    .reveal:nth-child(2){animation-delay:.08s}
+    .reveal:nth-child(3){animation-delay:.16s}
+    .reveal:nth-child(4){animation-delay:.24s}
+    @keyframes rise{to{opacity:1;transform:none}}
+
+    h1,h2,h3,h4{
+      margin:0;
+      line-height:.95;
+      font-family:"Bebas Neue", sans-serif;
+      letter-spacing:.03em;
+      font-weight:400;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns:1.4fr .8fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+
+    .hero,.summary,.panel,.modal-card{
+      position:relative;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      backdrop-filter:blur(12px);
+    }
+    .hero::before,.summary::before,.panel::before,.modal-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg, transparent 0 96%, rgba(255,255,255,.03) 96% 100%),
+        linear-gradient(transparent 0 96%, rgba(255,255,255,.03) 96% 100%);
+      background-size:28px 28px;
+      mask-image:linear-gradient(180deg, rgba(255,255,255,.8), transparent 78%);
+      opacity:.35;
+    }
+
+    .hero{
+      padding:28px;
+      min-height:200px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      color:var(--accent);
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      font-weight:700;
+      font-size:.82rem;
+    }
+    .eyebrow::before{
+      content:"";
+      width:10px;height:10px;border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 18px rgba(126,240,178,.7);
+    }
+    .hero h1{
+      font-size:clamp(3.2rem, 8vw, 7rem);
+      margin-top:10px;
+    }
+    .hero p{
+      max-width:70ch;
+      margin:0;
+      color:var(--muted);
+    }
+
+    .summary{
+      padding:20px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .metric{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px 14px;
+    }
+    .metric-label{
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-size:.8rem;
+      margin-bottom:8px;
+    }
+    .metric-value{
+      font-size:clamp(1.35rem, 3vw, 2.1rem);
+      font-weight:700;
+    }
+
+    .main-grid{
+      display:grid;
+      grid-template-columns:360px minmax(0,1fr);
+      gap:18px;
+    }
+    .stack{display:grid;gap:18px}
+
+    .panel{padding:18px}
+    .panel-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .panel-header h2{font-size:2rem}
+    .sub{color:var(--muted);font-size:.92rem}
+
+    .player-inputs,.control-grid,.history-list{display:grid;gap:12px}
+    .player-row{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+    }
+
+    input[type="text"],input[type="date"],input[type="number"],select{
+      width:100%;
+      background:rgba(10,14,20,.78);
+      color:var(--text);
+      border:1px solid var(--line-2);
+      border-radius:14px;
+      padding:13px 14px;
+      outline:none;
+      transition:.2s ease;
+    }
+    input:focus,select:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(126,240,178,.14);
+    }
+
+    .btn{
+      border:1px solid var(--line-2);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color:var(--text);
+      border-radius:14px;
+      padding:12px 14px;
+      cursor:pointer;
+      font-weight:700;
+      transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+    }
+    .btn:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,255,255,.28);
+      box-shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+    .btn:active{transform:translateY(0) scale(.98)}
+    .btn.accent{
+      background:linear-gradient(180deg, rgba(126,240,178,.22), rgba(126,240,178,.08));
+      border-color:rgba(126,240,178,.45);
+    }
+    .btn.blue{
+      background:linear-gradient(180deg, rgba(127,196,255,.20), rgba(127,196,255,.08));
+      border-color:rgba(127,196,255,.4);
+    }
+    .btn.gold{
+      background:linear-gradient(180deg, rgba(255,213,108,.18), rgba(255,213,108,.08));
+      border-color:rgba(255,213,108,.38);
+    }
+    .btn.danger{
+      background:linear-gradient(180deg, rgba(255,117,134,.18), rgba(255,117,134,.08));
+      border-color:rgba(255,117,134,.36);
+    }
+    .btn.small{padding:9px 10px;font-size:.9rem}
+    .button-row{display:flex;flex-wrap:wrap;gap:10px}
+
+    .target-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+    }
+    .multiplier-grid{
+      display:grid;
+      grid-template-columns:repeat(5, minmax(0,1fr));
+      gap:10px;
+    }
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:10px;
+    }
+    .target-btn{min-height:58px}
+    .target-btn.active{
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(126,240,178,.16) inset;
+    }
+
+    .status-box{
+      display:grid;
+      gap:10px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:rgba(255,255,255,.025);
+    }
+    .status-line{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+    .status-line strong{color:var(--text)}
+
+    .winner-banner{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:16px 18px;
+      border:1px solid rgba(255,213,108,.34);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,213,108,.12), rgba(255,213,108,.05));
+    }
+    .winner-banner.show{display:flex}
+    .winner-banner h3{font-size:1.9rem}
+    .winner-banner p{margin:0;color:var(--muted)}
+
+    .scoreboard-wrap{
+      overflow:auto;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:rgba(8,12,18,.6);
+    }
+
+    .scoreboard-vertical{
+      display:grid;
+      gap:16px;
+      padding:16px;
+    }
+
+    .player-scoreboard{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:rgba(255,255,255,.02);
+      overflow:hidden;
+    }
+
+    .player-scoreboard-header{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(19,29,41,.98), rgba(16,24,34,.98));
+    }
+
+    .player-scoreboard-header strong{
+      font-size:1.1rem;
+    }
+
+    .player-scoreboard-header .mini{
+      font-size:.8rem;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .scoreboard-targets{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
+      gap:12px;
+      padding:14px 16px;
+    }
+
+    .target-cell{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:10px;
+      border:1px solid var(--line-2);
+      border-radius:12px;
+      background:rgba(255,255,255,.01);
+      text-align:center;
+    }
+
+    .target-label{
+      font-weight:700;
+      font-size:.9rem;
+      color:var(--text);
+    }
+
+    .target-status{
+      font-size:.75rem;
+      color:var(--accent);
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      font-weight:700;
+    }
+
+    .marks{
+      display:flex;
+      justify-content:center;
+      gap:5px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .mark{
+      width:14px;height:14px;border-radius:999px;
+      border:1px solid var(--line-2);
+      background:rgba(255,255,255,.03);
+    }
+    .mark.filled{
+      background:linear-gradient(180deg, rgba(126,240,178,.94), rgba(126,240,178,.48));
+      border-color:rgba(126,240,178,.85);
+      box-shadow:0 0 14px rgba(126,240,178,.26);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1100px;
+    }
+    thead th{
+      position:sticky;
+      top:0;
+      background:linear-gradient(180deg, rgba(19,29,41,.98), rgba(16,24,34,.98));
+      z-index:1;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-size:.78rem;
+    }
+    th,td{
+      padding:12px 10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      text-align:center;
+      vertical-align:middle;
+    }
+    th:first-child,td:first-child{
+      position:sticky;
+      left:0;
+      background:linear-gradient(180deg, rgba(19,29,41,.98), rgba(16,24,34,.98));
+      z-index:2;
+      text-align:left;
+      min-width:170px;
+    }
+    tbody tr:nth-child(even) td{background:rgba(255,255,255,.014)}
+    .player-turn{outline:2px solid rgba(126,240,178,.32);outline-offset:-2px}
+
+    .player-name{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    .mini{font-size:.8rem;color:var(--muted)}
+
+    .history-item{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:rgba(255,255,255,.02);
+      display:grid;
+      gap:8px;
+    }
+    .history-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:6px 10px;
+      color:var(--muted);
+      font-size:.8rem;
+      background:rgba(255,255,255,.025);
+      width:max-content;
+    }
+
+    .empty{
+      color:var(--muted);
+      border:1px dashed var(--line-2);
+      border-radius:16px;
+      padding:16px;
+      text-align:center;
+    }
+
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(5,8,12,.66);
+      backdrop-filter:blur(10px);
+      z-index:50;
+    }
+    .modal.show{display:flex}
+    .modal-card{
+      width:min(1120px, 100%);
+      max-height:88vh;
+      overflow:auto;
+      background:linear-gradient(180deg, rgba(18,25,34,.96), rgba(12,18,26,.98));
+      padding:22px;
+      border-radius:28px;
+    }
+    .modal-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:16px;
+      margin-bottom:16px;
+    }
+
+    .calendar-grid{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:14px;
+      align-items:start;
+    }
+    .calendar-form{
+      display:grid;
+      gap:12px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:rgba(255,255,255,.02);
+    }
+    .field-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .footer-note{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:.84rem;
+    }
+
+    @media (max-width:1080px){
+      .topbar,.main-grid,.calendar-grid{grid-template-columns:1fr}
+      .summary{grid-template-columns:repeat(4,1fr)}
+    }
+    @media (max-width:760px){
+      .app{width:min(100% - 14px, var(--max))}
+      .hero,.panel{padding:14px}
+      .summary{grid-template-columns:1fr 1fr}
+      .target-grid{grid-template-columns:repeat(3, minmax(0,1fr))}
+      .multiplier-grid{grid-template-columns:repeat(3, minmax(0,1fr))}
+      .action-grid,.field-grid{grid-template-columns:1fr}
+      .winner-banner{flex-direction:column;align-items:flex-start}
+      .scoreboard-targets{grid-template-columns:repeat(auto-fit, minmax(80px, 1fr))}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="topbar">
+      <div class="hero reveal">
+        <div class="eyebrow">Cricket Variant Tracker</div>
+        <h1>Shove a Penny</h1>
+        <p>
+          Run live games for targets 5–20 and Bull. Marks close at 3. When a closed target is hit again,
+          those extra marks are shoved to the next player in turn order who still has that target open.
+          First player to close every target wins.
+        </p>
+      </div>
+
+      <div class="summary reveal">
+        <div class="metric">
+          <div class="metric-label">Round</div>
+          <div class="metric-value" id="metricRound">1</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Current Player</div>
+          <div class="metric-value" id="metricPlayer">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Darts</div>
+          <div class="metric-value" id="metricDarts">0 / 3</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Saved Games</div>
+          <div class="metric-value" id="metricGamesSaved">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <aside class="stack">
+        <div class="panel reveal">
+          <div class="panel-header">
+            <div>
+              <h2>Players</h2>
+              <div class="sub">Add any number of players to start a match.</div>
+            </div>
+          </div>
+
+          <div class="player-inputs" id="playerInputs"></div>
+
+          <div class="button-row">
+            <button class="btn small" id="addPlayerBtn" type="button">+ Add Player</button>
+            <button class="btn accent" id="startGameBtn" type="button">New Game</button>
+          </div>
+
+          <div class="footer-note">
+            Rule used here: extra hits on a closed target are transferred to the next player in order who has that target open.
+            If nobody has it open, the shove is wasted.
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-header">
+            <div>
+              <h2>Throw Controls</h2>
+              <div class="sub">Select a target, then tap single, double, or triple.</div>
+            </div>
+          </div>
+
+          <div class="control-grid">
+            <div>
+              <div class="sub" style="margin-bottom:8px;">Targets</div>
+              <div class="target-grid" id="targetGrid"></div>
+            </div>
+
+            <div>
+              <div class="sub" style="margin-bottom:8px;">Throw Type</div>
+              <div class="multiplier-grid">
+                <button class="btn blue target-btn mult-btn" data-mult="1" type="button">Single</button>
+                <button class="btn blue target-btn mult-btn" data-mult="2" type="button">Double</button>
+                <button class="btn blue target-btn mult-btn" data-mult="3" type="button">Triple</button>
+                <button class="btn target-btn" id="missBtn" type="button">Miss</button>
+                <button class="btn danger target-btn" id="undoBtn" type="button">Undo</button>
+              </div>
+            </div>
+
+            <div class="status-box">
+              <div class="status-line"><span>Selected target</span><strong id="selectedTargetLabel">None</strong></div>
+              <div class="status-line"><span>Current turn</span><strong id="currentTurnLabel">—</strong></div>
+              <div class="status-line"><span>Turn darts</span><strong id="currentTurnDartsLabel">0 / 3</strong></div>
+              <div class="status-line"><span>Last action</span><strong id="lastActionLabel">—</strong></div>
+            </div>
+
+            <div class="action-grid">
+              <button class="btn gold" id="leaderboardBtn" type="button">Leaderboard</button>
+              <button class="btn" id="calendarBtn" type="button">Game History / Calendar</button>
+              <button class="btn danger" id="resetCurrentBtn" type="button">Reset Current</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-header">
+            <div>
+              <h2>Recent Games</h2>
+              <div class="sub">Saved locally on this device.</div>
+            </div>
+          </div>
+          <div class="history-list" id="recentGames"></div>
+        </div>
+      </aside>
+
+      <main class="stack">
+        <div class="winner-banner reveal" id="winnerBanner">
+          <div>
+            <h3 id="winnerTitle">Game Complete</h3>
+            <p id="winnerText">Review the final scoreboard, then save the result.</p>
+          </div>
+          <div class="button-row">
+            <button class="btn accent" id="saveFinishedGameBtn" type="button">Submit Game</button>
+            <button class="btn" id="newGameQuickBtn" type="button">New Game</button>
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-header">
+            <div>
+              <h2>Scoreboard</h2>
+              <div class="sub">Each target closes at 3 marks. Closed hits shove marks forward to the next open player.</div>
+            </div>
+          </div>
+
+          <div class="scoreboard-wrap">
+            <div class="scoreboard-vertical" id="scoreboardBody"></div>
+          </div>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <div class="modal" id="leaderboardModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div>
+          <div class="eyebrow">Persistent Rankings</div>
+          <h2 style="font-size:3rem;">Leaderboard</h2>
+          <div class="sub">Ranked by Elo. Based on saved results in local storage.</div>
+        </div>
+        <button class="btn" id="closeLeaderboardBtn" type="button">Close</button>
+      </div>
+
+      <div class="scoreboard-wrap">
+        <table style="min-width:760px;">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Elo</th>
+              <th>W</th>
+              <th>L</th>
+              <th>Win %</th>
+              <th>Games</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="calendarModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div>
+          <div class="eyebrow">Backfill Matches</div>
+          <h2 style="font-size:3rem;">Game History / Calendar</h2>
+          <div class="sub">Enter previously played games and keep your rankings current.</div>
+        </div>
+        <button class="btn" id="closeCalendarBtn" type="button">Close</button>
+      </div>
+
+      <div class="calendar-grid">
+        <div class="calendar-form">
+          <div class="field-grid">
+            <div>
+              <label class="sub" for="historyDate">Game date</label>
+              <input id="historyDate" type="date" />
+            </div>
+            <div>
+              <label class="sub" for="historyPlayers">Players (comma separated)</label>
+              <input id="historyPlayers" type="text" placeholder="Alex, Jamie, Sam" />
+            </div>
+          </div>
+
+          <div>
+            <label class="sub" for="historyResult">Winner</label>
+            <input id="historyResult" type="text" placeholder="Alex" />
+          </div>
+
+          <div>
+            <label class="sub" for="historyRounds">Rounds played</label>
+            <input id="historyRounds" type="number" min="1" value="10" />
+          </div>
+
+          <div class="button-row">
+            <button class="btn accent" id="saveHistoryGameBtn" type="button">Save Historical Game</button>
+          </div>
+
+          <div class="footer-note">
+            Historical entries update local game history and the Elo leaderboard.
+          </div>
+        </div>
+
+        <div class="panel" style="padding:14px;">
+          <div class="panel-header">
+            <div>
+              <h2 style="font-size:2rem;">All Saved Games</h2>
+              <div class="sub">Chronological local archive.</div>
+            </div>
+          </div>
+          <div class="history-list" id="allGamesList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TARGETS = ["5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","Bull"];
+    const STORAGE_KEYS = {
+      games: "shove_a_penny_games_v1",
+      leaderboard: "shove_a_penny_leaderboard_v1",
+      current: "shove_a_penny_current_game_v1"
+    };
+
+    const state = {
+      players: [],
+      currentPlayerIndex: 0,
+      dartsInTurn: 0,
+      totalDarts: 0,
+      round: 1,
+      selectedTarget: null,
+      gameOver: false,
+      winnerName: "",
+      savedGamePending: false,
+      finalSnapshot: null
+    };
+
+    const undoStack = [];
+
+    const els = {
+      playerInputs: document.getElementById("playerInputs"),
+      addPlayerBtn: document.getElementById("addPlayerBtn"),
+      startGameBtn: document.getElementById("startGameBtn"),
+      targetGrid: document.getElementById("targetGrid"),
+      scoreboardBody: document.getElementById("scoreboardBody"),
+      selectedTargetLabel: document.getElementById("selectedTargetLabel"),
+      currentTurnLabel: document.getElementById("currentTurnLabel"),
+      currentTurnDartsLabel: document.getElementById("currentTurnDartsLabel"),
+      lastActionLabel: document.getElementById("lastActionLabel"),
+      metricRound: document.getElementById("metricRound"),
+      metricPlayer: document.getElementById("metricPlayer"),
+      metricDarts: document.getElementById("metricDarts"),
+      metricGamesSaved: document.getElementById("metricGamesSaved"),
+      missBtn: document.getElementById("missBtn"),
+      undoBtn: document.getElementById("undoBtn"),
+      leaderboardBtn: document.getElementById("leaderboardBtn"),
+      calendarBtn: document.getElementById("calendarBtn"),
+      resetCurrentBtn: document.getElementById("resetCurrentBtn"),
+      recentGames: document.getElementById("recentGames"),
+      winnerBanner: document.getElementById("winnerBanner"),
+      winnerTitle: document.getElementById("winnerTitle"),
+      winnerText: document.getElementById("winnerText"),
+      saveFinishedGameBtn: document.getElementById("saveFinishedGameBtn"),
+      newGameQuickBtn: document.getElementById("newGameQuickBtn"),
+      leaderboardModal: document.getElementById("leaderboardModal"),
+      closeLeaderboardBtn: document.getElementById("closeLeaderboardBtn"),
+      leaderboardBody: document.getElementById("leaderboardBody"),
+      calendarModal: document.getElementById("calendarModal"),
+      closeCalendarBtn: document.getElementById("closeCalendarBtn"),
+      historyDate: document.getElementById("historyDate"),
+      historyPlayers: document.getElementById("historyPlayers"),
+      historyResult: document.getElementById("historyResult"),
+      historyRounds: document.getElementById("historyRounds"),
+      saveHistoryGameBtn: document.getElementById("saveHistoryGameBtn"),
+      allGamesList: document.getElementById("allGamesList")
+    };
+
+    function createPlayerInput(value = "") {
+      const row = document.createElement("div");
+      row.className = "player-row";
+      row.innerHTML = `
+        <input type="text" class="player-name-input" placeholder="Player name" value="${escapeHtml(value)}" />
+        <button class="btn small danger remove-player" type="button">Remove</button>
+      `;
+      row.querySelector(".remove-player").addEventListener("click", () => {
+        if (els.playerInputs.children.length > 2) row.remove();
+      });
+      els.playerInputs.appendChild(row);
+    }
+
+    function initPlayerInputs() {
+      els.playerInputs.innerHTML = "";
+      createPlayerInput("Player 1");
+      createPlayerInput("Player 2");
+    }
+
+    function buildTargetButtons() {
+      els.targetGrid.innerHTML = "";
+      TARGETS.forEach(target => {
+        const btn = document.createElement("button");
+        btn.className = "btn target-btn";
+        btn.type = "button";
+        btn.dataset.target = target;
+        btn.textContent = target;
+        btn.addEventListener("click", () => {
+          state.selectedTarget = target;
+          updateSelectedTargetUI();
+        });
+        els.targetGrid.appendChild(btn);
+      });
+    }
+
+    function updateSelectedTargetUI() {
+      [...els.targetGrid.querySelectorAll(".target-btn")].forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.target === state.selectedTarget);
+      });
+      els.selectedTargetLabel.textContent = state.selectedTarget || "None";
+    }
+
+    function freshPlayer(name) {
+      const marks = {};
+      TARGETS.forEach(t => marks[t] = 0);
+      return {
+        name,
+        marks,
+        dartsThrown: 0
+      };
+    }
+
+    function getPlayerNamesFromInputs() {
+      return [...document.querySelectorAll(".player-name-input")]
+        .map(i => i.value.trim())
+        .filter(Boolean);
+    }
+
+    function startGame(names) {
+      if (!names || names.length < 2) {
+        alert("Please enter at least 2 player names.");
+        return;
+      }
+      const unique = [...new Set(names)];
+      if (unique.length < 2) {
+        alert("Please enter at least 2 unique player names.");
+        return;
+      }
+
+      state.players = unique.map(freshPlayer);
+      state.currentPlayerIndex = 0;
+      state.dartsInTurn = 0;
+      state.totalDarts = 0;
+      state.round = 1;
+      state.selectedTarget = null;
+      state.gameOver = false;
+      state.winnerName = "";
+      state.savedGamePending = false;
+      state.finalSnapshot = null;
+      undoStack.length = 0;
+      els.lastActionLabel.textContent = "New game started";
+      els.winnerBanner.classList.remove("show");
+      renderAll();
+      persistCurrentGame();
+    }
+
+    function currentPlayer() {
+      return state.players[state.currentPlayerIndex];
+    }
+
+    function isClosed(player, target) {
+      return player.marks[target] >= 3;
+    }
+
+    function allClosed(player) {
+      return TARGETS.every(t => player.marks[t] >= 3);
+    }
+
+    function findNextOpenPlayerIndex(startIndex, target) {
+      if (state.players.length < 2) return -1;
+      for (let step = 1; step < state.players.length; step++) {
+        const idx = (startIndex + step) % state.players.length;
+        if (state.players[idx].marks[target] < 3) return idx;
+      }
+      return -1;
+    }
+
+    function applyThrow(target, multiplier) {
+      if (state.gameOver) return;
+      if (!state.players.length) {
+        alert("Start a game first.");
+        return;
+      }
+
+      const snapshot = getSerializableCurrentState();
+      const player = currentPlayer();
+
+      if (target === "MISS") {
+        player.dartsThrown += 1;
+        advanceDart("Miss");
+        pushUndoSnapshot(snapshot);
+        return;
+      }
+
+      let hits = Number(multiplier);
+      let actionNotes = [];
+      player.dartsThrown += 1;
+
+      if (!isClosed(player, target)) {
+        const needed = 3 - player.marks[target];
+        const toSelf = Math.min(needed, hits);
+        player.marks[target] += toSelf;
+        hits -= toSelf;
+        actionNotes.push(`${multiplier}x ${target}`);
+      } else {
+        actionNotes.push(`${multiplier}x ${target}`);
+      }
+
+      while (hits > 0) {
+        const nextOpenIdx = findNextOpenPlayerIndex(state.currentPlayerIndex, target);
+        if (nextOpenIdx === -1) {
+          actionNotes.push("shove wasted");
+          break;
+        }
+        const targetPlayer = state.players[nextOpenIdx];
+        const needed = 3 - targetPlayer.marks[target];
+        const shoved = Math.min(needed, hits);
+        targetPlayer.marks[target] += shoved;
+        hits -= shoved;
+        actionNotes.push(`shoved ${shoved} to ${targetPlayer.name}`);
+        if (targetPlayer.marks[target] >= 3 && hits > 0) {
+          continue;
+        }
+      }
+
+      advanceDart(actionNotes.join(" · "));
+      pushUndoSnapshot(snapshot);
+    }
+
+    function advanceDart(label) {
+      state.dartsInTurn += 1;
+      state.totalDarts += 1;
+      els.lastActionLabel.textContent = label;
+
+      checkWinner();
+
+      if (!state.gameOver && state.dartsInTurn >= 3) {
+        state.dartsInTurn = 0;
+        state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+        if (state.currentPlayerIndex === 0) state.round += 1;
+      }
+
+      renderAll();
+      persistCurrentGame();
+    }
+
+    function checkWinner() {
+      const winners = state.players.filter(allClosed);
+      if (!winners.length) return false;
+
+      state.gameOver = true;
+      state.winnerName = winners[0].name;
+      state.savedGamePending = true;
+      state.finalSnapshot = getSerializableCurrentState();
+      els.winnerTitle.textContent = `${state.winnerName} Wins`;
+      els.winnerText.textContent = `All targets are closed. Final scoreboard is shown below before you submit the game.`;
+      els.winnerBanner.classList.add("show");
+      clearPersistedCurrentGame();
+      return true;
+    }
+
+    function renderScoreboard() {
+      els.scoreboardBody.innerHTML = "";
+      if (!state.players.length) {
+        els.scoreboardBody.innerHTML = `<div class="empty">No active game. Add players and start a new game.</div>`;
+        return;
+      }
+
+      state.players.forEach((player, idx) => {
+        const playerBoard = document.createElement("div");
+        playerBoard.className = "player-scoreboard";
+        if (!state.gameOver && idx === state.currentPlayerIndex) {
+          playerBoard.style.borderColor = "rgba(126,240,178,.32)";
+        }
+
+        const header = document.createElement("div");
+        header.className = "player-scoreboard-header";
+        const statusText = state.gameOver 
+          ? (state.winnerName === player.name ? 'Winner' : 'Finished')
+          : (idx === state.currentPlayerIndex ? 'Throwing now' : 'Waiting');
+        header.innerHTML = `
+          <strong>${escapeHtml(player.name)}</strong>
+          <div class="mini">${statusText} · ${player.dartsThrown} darts thrown</div>
+        `;
+        playerBoard.appendChild(header);
+
+        const targetsGrid = document.createElement("div");
+        targetsGrid.className = "scoreboard-targets";
+
+        TARGETS.forEach(target => {
+          const marks = player.marks[target];
+          const isClos = marks >= 3;
+          const dots = [0,1,2].map(i => `<span class="mark ${i < Math.min(marks,3) ? 'filled' : ''}"></span>`).join("");
+          
+          const cell = document.createElement("div");
+          cell.className = "target-cell";
+          cell.innerHTML = `
+            <div class="target-label">${target}</div>
+            <div class="marks">${dots}</div>
+            ${isClos ? `<div class="target-status">Closed</div>` : ''}
+          `;
+          targetsGrid.appendChild(cell);
+        });
+
+        playerBoard.appendChild(targetsGrid);
+        els.scoreboardBody.appendChild(playerBoard);
+      });
+    }
+
+    function renderStatus() {
+      els.metricRound.textContent = state.round;
+      els.metricPlayer.textContent = state.players.length ? currentPlayer().name : "—";
+      els.metricDarts.textContent = `${state.dartsInTurn} / 3`;
+      els.metricGamesSaved.textContent = loadGames().length;
+      els.currentTurnLabel.textContent = state.players.length ? currentPlayer().name : "—";
+      els.currentTurnDartsLabel.textContent = `${state.dartsInTurn} / 3`;
+    }
+
+    function renderRecentGames() {
+      const games = loadGames().slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+      els.recentGames.innerHTML = "";
+      if (!games.length) {
+        els.recentGames.innerHTML = `<div class="empty">No saved games yet.</div>`;
+        return;
+      }
+      games.slice(0,6).forEach(game => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `
+          <div class="history-top">
+            <div>
+              <strong>${escapeHtml(game.winnerLabel)}</strong>
+              <div class="mini">${formatDate(game.date)}</div>
+            </div>
+            <button class="btn small" data-game-id="${game.id}" type="button">Load</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${game.players.map(p => `<span class="pill">${escapeHtml(p)}</span>`).join("")}
+          </div>
+        `;
+        div.querySelector("[data-game-id]").addEventListener("click", e => {
+          const gid = e.target.dataset.gameId;
+          loadGameById(gid);
+        });
+        els.recentGames.appendChild(div);
+      });
+    }
+
+    function renderAll() {
+      renderScoreboard();
+      renderStatus();
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function loadGames() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.games);
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error("Error loading games:", e);
+        return [];
+      }
+    }
+
+    function saveGame(snapshot) {
+      try {
+        const games = loadGames();
+        const gameEntry = {
+          id: Date.now().toString(),
+          date: new Date().toISOString(),
+          players: snapshot.players.map(p => p.name),
+          winnerLabel: snapshot.winnerName,
+          round: snapshot.round,
+          snapshot
+        };
+        games.push(gameEntry);
+        localStorage.setItem(STORAGE_KEYS.games, JSON.stringify(games));
+        updateLeaderboardElo(snapshot);
+        renderRecentGames();
+        renderStatus();
+      } catch (e) {
+        console.error("Error saving game:", e);
+      }
+    }
+
+    function loadGameById(gameId) {
+      const games = loadGames();
+      const game = games.find(g => g.id === gameId);
+      if (game && game.snapshot) {
+        state.players = game.snapshot.players;
+        state.currentPlayerIndex = game.snapshot.currentPlayerIndex;
+        state.dartsInTurn = game.snapshot.dartsInTurn;
+        state.totalDarts = game.snapshot.totalDarts;
+        state.round = game.snapshot.round;
+        state.selectedTarget = game.snapshot.selectedTarget;
+        state.gameOver = game.snapshot.gameOver;
+        state.winnerName = game.snapshot.winnerName;
+        renderAll();
+      }
+    }
+
+    function getSerializableCurrentState() {
+      return {
+        players: state.players.map(p => ({...p})),
+        currentPlayerIndex: state.currentPlayerIndex,
+        dartsInTurn: state.dartsInTurn,
+        totalDarts: state.totalDarts,
+        round: state.round,
+        selectedTarget: state.selectedTarget,
+        gameOver: state.gameOver,
+        winnerName: state.winnerName
+      };
+    }
+
+    function persistCurrentGame() {
+      try {
+        if (!state.gameOver) {
+          localStorage.setItem(STORAGE_KEYS.current, JSON.stringify(getSerializableCurrentState()));
+        }
+      } catch (e) {
+        console.error("Error persisting game:", e);
+      }
+    }
+
+    function restoreCurrentGame() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.current);
+        if (stored) {
+          const saved = JSON.parse(stored);
+          state.players = saved.players;
+          state.currentPlayerIndex = saved.currentPlayerIndex;
+          state.dartsInTurn = saved.dartsInTurn;
+          state.totalDarts = saved.totalDarts;
+          state.round = saved.round;
+          state.selectedTarget = saved.selectedTarget;
+          state.gameOver = saved.gameOver;
+          state.winnerName = saved.winnerName;
+          renderAll();
+        }
+      } catch (e) {
+        console.error("Error restoring game:", e);
+      }
+    }
+
+    function clearPersistedCurrentGame() {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.current);
+      } catch (e) {
+        console.error("Error clearing persisted game:", e);
+      }
+    }
+
+    function pushUndoSnapshot(snapshot) {
+      undoStack.push(snapshot);
+      if (undoStack.length > 50) undoStack.shift();
+    }
+
+    function updateLeaderboardElo(snapshot) {
+      try {
+        const leaderboard = loadLeaderboard();
+        const winnerName = snapshot.winnerName;
+        
+        snapshot.players.forEach(p => {
+          if (!leaderboard[p.name]) {
+            leaderboard[p.name] = { elo: 1200, wins: 0, losses: 0, games: 0 };
+          }
+          leaderboard[p.name].games += 1;
+          const isWinner = p.name === winnerName;
+          if (isWinner) {
+            leaderboard[p.name].wins += 1;
+            leaderboard[p.name].elo += 32;
+          } else {
+            leaderboard[p.name].losses += 1;
+            leaderboard[p.name].elo -= 8;
+          }
+        });
+        
+        localStorage.setItem(STORAGE_KEYS.leaderboard, JSON.stringify(leaderboard));
+      } catch (e) {
+        console.error("Error updating leaderboard:", e);
+      }
+    }
+
+    function loadLeaderboard() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.leaderboard);
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {
+        console.error("Error loading leaderboard:", e);
+        return {};
+      }
+    }
+
+    function renderLeaderboard() {
+      const leaderboard = loadLeaderboard();
+      const rows = Object.entries(leaderboard)
+        .map(([name, stats]) => ({name, ...stats}))
+        .sort((a,b) => b.elo - a.elo);
+
+      els.leaderboardBody.innerHTML = "";
+      rows.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        const winPct = row.games > 0 ? ((row.wins / row.games) * 100).toFixed(1) : "0.0";
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${Math.round(row.elo)}</td>
+          <td>${row.wins}</td>
+          <td>${row.losses}</td>
+          <td>${winPct}%</td>
+          <td>${row.games}</td>
+        `;
+        els.leaderboardBody.appendChild(tr);
+      });
+    }
+
+    // Event listeners
+    els.addPlayerBtn.addEventListener("click", () => {
+      createPlayerInput();
+    });
+
+    els.startGameBtn.addEventListener("click", () => {
+      const names = getPlayerNamesFromInputs();
+      startGame(names);
+    });
+
+    [...document.querySelectorAll(".mult-btn")].forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (state.selectedTarget) {
+          applyThrow(state.selectedTarget, btn.dataset.mult);
+        }
+      });
+    });
+
+    els.missBtn.addEventListener("click", () => {
+      applyThrow("MISS", 0);
+    });
+
+    els.undoBtn.addEventListener("click", () => {
+      if (undoStack.length > 0) {
+        const snapshot = undoStack.pop();
+        state.players = snapshot.players;
+        state.currentPlayerIndex = snapshot.currentPlayerIndex;
+        state.dartsInTurn = snapshot.dartsInTurn;
+        state.totalDarts = snapshot.totalDarts;
+        state.round = snapshot.round;
+        state.selectedTarget = snapshot.selectedTarget;
+        els.lastActionLabel.textContent = "Undo";
+        renderAll();
+        persistCurrentGame();
+      }
+    });
+
+    els.leaderboardBtn.addEventListener("click", () => {
+      renderLeaderboard();
+      els.leaderboardModal.classList.add("show");
+    });
+
+    els.closeLeaderboardBtn.addEventListener("click", () => {
+      els.leaderboardModal.classList.remove("show");
+    });
+
+    els.calendarBtn.addEventListener("click", () => {
+      renderAllGames();
+      els.calendarModal.classList.add("show");
+    });
+
+    els.closeCalendarBtn.addEventListener("click", () => {
+      els.calendarModal.classList.remove("show");
+    });
+
+    els.resetCurrentBtn.addEventListener("click", () => {
+      if (confirm("Reset current game?")) {
+        state.players = [];
+        state.currentPlayerIndex = 0;
+        state.dartsInTurn = 0;
+        state.totalDarts = 0;
+        state.round = 1;
+        state.selectedTarget = null;
+        state.gameOver = false;
+        state.winnerName = "";
+        undoStack.length = 0;
+        clearPersistedCurrentGame();
+        renderAll();
+      }
+    });
+
+    els.saveFinishedGameBtn.addEventListener("click", () => {
+      if (state.finalSnapshot) {
+        saveGame(state.finalSnapshot);
+        state.savedGamePending = false;
+        alert("Game saved!");
+        state.players = [];
+        state.gameOver = false;
+        state.winnerName = "";
+        renderAll();
+      }
+    });
+
+    els.newGameQuickBtn.addEventListener("click", () => {
+      state.players = [];
+      state.gameOver = false;
+      state.winnerName = "";
+      els.winnerBanner.classList.remove("show");
+      renderAll();
+    });
+
+    els.saveHistoryGameBtn.addEventListener("click", () => {
+      const dateStr = els.historyDate.value;
+      const playersStr = els.historyPlayers.value;
+      const winner = els.historyResult.value.trim();
+      const rounds = parseInt(els.historyRounds.value) || 10;
+
+      if (!dateStr || !playersStr || !winner) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      const players = playersStr.split(",").map(p => p.trim()).filter(Boolean);
+      if (!players.includes(winner)) {
+        alert("Winner must be one of the players.");
+        return;
+      }
+
+      const snapshot = {
+        players: players.map(name => freshPlayer(name)),
+        winnerName: winner,
+        round: rounds,
+        currentPlayerIndex: 0,
+        dartsInTurn: 0,
+        totalDarts: 0,
+        selectedTarget: null,
+        gameOver: true
+      };
+
+      try {
+        const games = loadGames();
+        const gameEntry = {
+          id: Date.now().toString(),
+          date: new Date(dateStr).toISOString(),
+          players: players,
+          winnerLabel: winner,
+          round: rounds,
+          snapshot
+        };
+        games.push(gameEntry);
+        localStorage.setItem(STORAGE_KEYS.games, JSON.stringify(games));
+        updateLeaderboardElo(snapshot);
+        els.historyDate.value = "";
+        els.historyPlayers.value = "";
+        els.historyResult.value = "";
+        els.historyRounds.value = "10";
+        alert("Historical game saved!");
+        renderAllGames();
+        renderStatus();
+      } catch (e) {
+        console.error("Error saving historical game:", e);
+        alert("Error saving game.");
+      }
+    });
+
+    function renderAllGames() {
+      const games = loadGames().slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+      els.allGamesList.innerHTML = "";
+      if (!games.length) {
+        els.allGamesList.innerHTML = `<div class="empty">No saved games yet.</div>`;
+        return;
+      }
+      games.forEach(game => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `
+          <div class="history-top">
+            <div>
+              <strong>${escapeHtml(game.winnerLabel)}</strong>
+              <div class="mini">${formatDate(game.date)} · Round ${game.round}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${game.players.map(p => `<span class="pill">${escapeHtml(p)}</span>`).join("")}
+          </div>
+        `;
+        els.allGamesList.appendChild(div);
+      });
+    }
+
+    // Initialize
+    initPlayerInputs();
+    buildTargetButtons();
+    restoreCurrentGame();
+    renderRecentGames();
+  </script>
+</body>
+</html>
+
